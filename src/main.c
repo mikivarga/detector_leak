@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i < argc; i++)
     arglen += strlen(argv[i]) + 1;
 
-  const char *preload = "LD_PRELOAD=./shim.so";
+  const char *preload = "LD_PRELOAD=./shared_lib/shim.so";
   arglen += strlen(preload) + 1;
   char data[arglen];
   strcpy(data, preload);
