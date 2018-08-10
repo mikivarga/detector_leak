@@ -4,6 +4,8 @@
 
 void __attribute__ ((constructor)) init_malloc_free(void);
 void __attribute__ ((destructor)) cleanup_malloc_free(void);
+void __cyg_profile_func_enter (void *this_fn, void *call_site) __attribute__((no_instrument_function));
+void __cyg_profile_func_exit  (void *this_fn, void *call_site) __attribute__((no_instrument_function));
 
 void *malloc(size_t size);
 void free(void *ptr);
@@ -34,10 +36,15 @@ void cleanup_malloc_free(void)
 void *malloc(size_t size)
 {
     void *alloc_block;
-
+    Dl_info info;
+    
+    dladdr(malloc, &info);
     alloc_block = original_malloc(size);
     block.size = size;
     block.ptr = alloc_block;
+    block.addr_shared_obj = info.dli_fbase;//correct add;
+    block.path_shared_obj = info.dli_fname;
+    block.addr_in_stack = __builtin_return_address(0);
     lst_add_memory_block(block, &lst_mem_blocks, original_malloc);
     //TODO: check if din't create new node!
     return alloc_block;

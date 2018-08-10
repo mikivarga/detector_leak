@@ -37,13 +37,19 @@ void lst_show_leaks(const t_list *plst)
 
     pnode = *plst;
     leak_cnt = leak_size = 0;
+    fprintf(stderr, "\n\tHEAP SUMMARY:\n");
     while(pnode != NULL) {
         leak_cnt++;
         leak_size += pnode->block.size;
-        fprintf(stderr, "LEAK\t%zu\n", pnode->block.size);
+        fprintf(stderr, "LEAK\t%zu bytes", pnode->block.size);
+        fprintf(stderr, "\tat %p: malloc (in %s)\n",
+        pnode->block.addr_shared_obj, pnode->block.path_shared_obj);
+        fprintf(stderr, "\t\t\tby %p: FUNC (in PATH to a./out)\n\n", pnode->block.addr_in_stack);
+
         pnode = pnode->next;
     }
-    fprintf(stderr, "TOTAL\t%d\t%d\n", leak_cnt, leak_size);
+    fprintf(stderr, "\tLEAK SUMMARY:\n");
+    fprintf(stderr, "TOTAL LOST:\t%d bytes in %d blocks\n", leak_size, leak_cnt);
 }
 
 Boolean lst_delete_memory_block(void *ptr, t_list *plst, void (*pfun)(void *ptr))

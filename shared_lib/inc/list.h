@@ -9,6 +9,9 @@ typedef enum {FALSE, TRUE} Boolean;
 typedef struct s_mem_block{
     void *ptr;
     size_t size;
+    const char *path_shared_obj;
+    void *addr_shared_obj;
+    void *addr_in_stack;
 } t_mem_block;
 
 typedef struct s_node {
