@@ -12,6 +12,11 @@ int main(int argc, char *argv[])
   if (setenv(name, path, 0) == -1) {
     //error setenv;
   }
+
+//TODO:THREAD
+  //TODO * popen nm -n
+  //TODO *new process to controle child process
+    //toto parsing file and take direcrtory
   unsetenv(name);
   return 0;
 }
