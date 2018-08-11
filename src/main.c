@@ -1,44 +1,56 @@
 #include "../inc/leaks_detector.h"
 
 extern char **__environ;
-static char *name = "LD_PRELOAD";
-static char *path = "./shared_lib/shim.so";
+static char *pr_name = "PRG_NAME";
+static char cmd[BUF] = "nm -n ";
+static char patch[BUF] = "LD_PRELOAD=././shared_lib/shim.so ";
+
+static void wait_status(int status)
+{
+  if (WIFEXITED(status)) {
+    fprintf(stderr, "child exited, status=%d\n", WEXITSTATUS(status));
+  } else if (WIFSIGNALED(status)) {
+    fprintf(stderr, "child killed by signal %d (%s)\n",
+    WTERMSIG(status), strsignal(WTERMSIG(status)));
+  } else if (WIFSTOPPED(status)) {
+    fprintf(stderr, "child stopped by signal %d (%s)\n",
+    WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+  } else {
+    printf("what happened to this child? (status=%x)\n",
+    (unsigned int) status);
+  }
+}
+
+  char s[1024];
 
 int main(int argc, char *argv[])
 {
+  int status;
+  FILE *fp;
+
   if (argc != 2) {
-    //usage...
+    fprintf(stderr, "Usage: %s [path to prog]\n", argv[0]);
+    return 0;
   }
-  if (setenv(name, path, 0) == -1) {
-    //error setenv;
+  if (setenv(pr_name, argv[1], 0) == -1) {
+    HANDLE_ERROR("setenv");
   }
+  memcpy(cmd + strlen(cmd), argv[1], strlen(argv[1]) + 1);
+  if ((fp = popen(cmd, "r")) == NULL) {
+    HANDLE_ERROR("peopen");
+  }
+  //parce file
+  //while (fgets(s, BUF, fp) != NULL);
+  //close pipe
 
-//TODO:THREAD
-  //TODO * popen nm -n
-  //TODO *new process to controle child process
-    //toto parsing file and take direcrtory
-  unsetenv(name);
-  return 0;
+  if ((status = pclose(fp)) == -1){
+    wait_status(status);
+  }
+  memcpy(patch + strlen(patch), argv[1], strlen(argv[1]) + 1);
+  if ((fp = popen(patch, "r")) == NULL) {
+    HANDLE_ERROR("peopen");
+  }
+  if ((status = pclose(fp)) == -1){
+    wait_status(status);
+  }
 }
-
-/*
-int main(int argc, char *argv[]) {
-  int arglen = 0;
-  for (int i = 1; i < argc; i++)
-    arglen += strlen(argv[i]) + 1;
-
-  const char *preload = "LD_PRELOAD=./shared_lib/shim.so";
-  arglen += strlen(preload) + 1;
-  char data[arglen];
-  strcpy(data, preload);
-  for (int i = 1; i < argc; i++) {
-    strcat(data, " ");
-    strcat(data, argv[i]);
-  }
-  printf("%s\n", data);
-  FILE *pipe = popen(data, "r");
-  if (pipe == NULL)
-    perror("Error opening piped file.");
-  pclose(pipe);
-}
-*/

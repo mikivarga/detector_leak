@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <sys/wait.h>
 #include "../inc/list.h"
 
 void __attribute__ ((constructor)) init_malloc_free(void);

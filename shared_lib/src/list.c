@@ -1,3 +1,4 @@
+#define _GNU_SOURSE
 #include "../inc/list.h"
 
 static void copy_to_node(t_mem_block block, t_node *pnode);
@@ -44,7 +45,8 @@ void lst_show_leaks(const t_list *plst)
         fprintf(stderr, "LEAK\t%zu bytes", pnode->block.size);
         fprintf(stderr, "\tat %p: malloc (in %s)\n",
         pnode->block.addr_shared_obj, pnode->block.path_shared_obj);
-        fprintf(stderr, "\t\t\tby %p: FUNC (in PATH to a./out)\n\n", pnode->block.addr_in_stack);
+        fprintf(stderr, "\t\t\tby %p: FUNC (in %s)\n\n",
+        pnode->block.addr_in_stack, getenv("PRG_NAME"));
 
         pnode = pnode->next;
     }
