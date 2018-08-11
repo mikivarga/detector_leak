@@ -1,9 +1,11 @@
 #include "../inc/leaks_detector.h"
+#include <fcntl.h>
 
 extern char **__environ;
 static char *pr_name = "PRG_NAME";
 static char cmd[BUF] = "nm -n ";
-static char patch[BUF] = "LD_PRELOAD=././shared_lib/shim.so ";
+static char patch[BUF] = "LD_PRELOAD=./shared_lib/shim.so ";
+static char *filename = "1.txt";
 
 static void wait_status(int status)
 {
@@ -21,7 +23,20 @@ static void wait_status(int status)
   }
 }
 
-  char s[1024];
+static void create_file(FILE *fp)
+{
+  FILE *newfile;
+  char buf[BUF];
+
+  newfile = fopen(filename, "w");
+  if (newfile == NULL) {
+    HANDLE_ERROR("fopen");
+  }
+  while (fgets(buf, BUF, fp) != NULL) {
+    fprintf(newfile,"%s\n", buf);
+  }
+  fclose(newfile);
+}
 
 int main(int argc, char *argv[])
 {
@@ -39,10 +54,7 @@ int main(int argc, char *argv[])
   if ((fp = popen(cmd, "r")) == NULL) {
     HANDLE_ERROR("peopen");
   }
-  //parce file
-  //while (fgets(s, BUF, fp) != NULL);
-  //close pipe
-
+  create_file(fp);
   if ((status = pclose(fp)) == -1){
     wait_status(status);
   }
