@@ -26,7 +26,7 @@ $(OBJ_DIR):
 	mkdir $(OBJ_DIR)
 
 $(OBJ_DIR)%.o: %.c
-	@$(CC) $(LD_FLAGS) -c $< -o $@ $(CC_FLAGS) $(HEADER_FLAGS)
+	$(CC) $(LD_FLAGS) -c $< -o $@ $(CC_FLAGS) $(HEADER_FLAGS)
 
 clean:
 	rm -f $(OBJ)

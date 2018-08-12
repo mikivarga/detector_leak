@@ -1,16 +1,18 @@
 #include "../inc/leaks_detector.h"
-#include <fcntl.h>
 
-extern char **__environ;
+extern char **environ;
+
+static char *name_preload = "LD_PRELOAD";
+static char *path_preload = "./shared_lib/shim.so";
 static char *pr_name = "PRG_NAME";
-static char cmd[BUF] = "nm -n ";
-static char patch[BUF] = "LD_PRELOAD=./shared_lib/shim.so ";
-static char *filename = "1.txt";
+static char cmd[BUF] = "nm -nr ";
+static char *filename = "file_stack_func";
 
 static void wait_status(int status)
 {
   if (WIFEXITED(status)) {
-    fprintf(stderr, "child exited, status=%d\n", WEXITSTATUS(status));
+    fprintf(stderr, "child exited, status=%d\n",
+    WEXITSTATUS(status));
   } else if (WIFSIGNALED(status)) {
     fprintf(stderr, "child killed by signal %d (%s)\n",
     WTERMSIG(status), strsignal(WTERMSIG(status)));
@@ -23,7 +25,7 @@ static void wait_status(int status)
   }
 }
 
-static void create_file(FILE *fp)
+static void save_stack_func(FILE *fp)
 {
   FILE *newfile;
   char buf[BUF];
@@ -33,7 +35,12 @@ static void create_file(FILE *fp)
     HANDLE_ERROR("fopen");
   }
   while (fgets(buf, BUF, fp) != NULL) {
-    fprintf(newfile,"%s\n", buf);
+    if (strstr(buf, "_libc_csu_init")) {
+      while ((fgets(buf, BUF, fp) != NULL)
+      && !strstr(buf, "frame_dummy")) {
+        fprintf(newfile,"%s", buf);
+      }
+    }
   }
   fclose(newfile);
 }
@@ -41,28 +48,35 @@ static void create_file(FILE *fp)
 int main(int argc, char *argv[])
 {
   int status;
+  pid_t child_pid;
   FILE *fp;
 
   if (argc != 2) {
     fprintf(stderr, "Usage: %s [path to prog]\n", argv[0]);
     return 0;
   }
-  if (setenv(pr_name, argv[1], 0) == -1) {
-    HANDLE_ERROR("setenv");
-  }
   memcpy(cmd + strlen(cmd), argv[1], strlen(argv[1]) + 1);
   if ((fp = popen(cmd, "r")) == NULL) {
     HANDLE_ERROR("peopen");
   }
-  create_file(fp);
+  save_stack_func(fp);
   if ((status = pclose(fp)) == -1){
     wait_status(status);
   }
-  memcpy(patch + strlen(patch), argv[1], strlen(argv[1]) + 1);
-  if ((fp = popen(patch, "r")) == NULL) {
-    HANDLE_ERROR("peopen");
+  if (setenv(pr_name, argv[1], 0) == -1) {
+    HANDLE_ERROR("setenv");
   }
-  if ((status = pclose(fp)) == -1){
-    wait_status(status);
+  if (setenv(name_preload, path_preload, 0) == -1) {
+    HANDLE_ERROR("setenv");
   }
+  switch(child_pid = fork()){
+    case -1:
+      HANDLE_ERROR("fork failed");
+    case 0:
+      execve(argv[1], argv + 1, environ);
+      exit(EXIT_FAILURE);
+    default:
+      wait(&status);
+  }
+  return 0;
 }

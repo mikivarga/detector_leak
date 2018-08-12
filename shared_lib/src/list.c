@@ -1,5 +1,6 @@
 #define _GNU_SOURSE
 #include "../inc/list.h"
+#include <unistd.h>
 
 static void copy_to_node(t_mem_block block, t_node *pnode);
 
@@ -35,7 +36,6 @@ void lst_show_leaks(const t_list *plst)
 {
     int leak_cnt, leak_size;
     t_node *pnode;
-
     pnode = *plst;
     leak_cnt = leak_size = 0;
     fprintf(stderr, "\n\tHEAP SUMMARY:\n");
