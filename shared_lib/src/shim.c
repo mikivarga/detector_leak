@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
-#include <sys/wait.h>
 #include "../inc/list.h"
 
 void __attribute__ ((constructor)) init_malloc_free(void);
@@ -22,16 +21,12 @@ void init_malloc_free(void)
     original_malloc = dlsym(RTLD_NEXT, "malloc");
     original_free = dlsym(RTLD_NEXT, "free");
     lst_init(&lst_mem_blocks);
-
-    return ;
 }
 
 void cleanup_malloc_free(void)
 {
     lst_show_leaks(&lst_mem_blocks);
     lst_delete(&lst_mem_blocks, original_free);
-
-    return ;
 }
 
 void *malloc(size_t size)
@@ -43,18 +38,16 @@ void *malloc(size_t size)
     alloc_block = original_malloc(size);
     block.size = size;
     block.ptr = alloc_block;
-    block.addr_shared_obj = info.dli_fbase;//correct add;
+    block.addr_shared_obj = info.dli_fbase;
     block.path_shared_obj = info.dli_fname;
     block.addr_in_stack = __builtin_return_address(0);
-    lst_add_memory_block(block, &lst_mem_blocks, original_malloc);
-    //TODO: check if din't create new node!
+    lst_add_memory_block(block, &lst_mem_blocks, original_malloc);    
+
     return alloc_block;
 }
 
 void free(void *ptr)
 {
     lst_delete_memory_block(ptr, &lst_mem_blocks, original_free);
-    //TODO: check if din't delete node!
     original_free(ptr);
-    return ;
 }
